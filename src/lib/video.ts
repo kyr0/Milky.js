@@ -75,4 +75,5 @@ export const renderFrame = (
   Module._free(ptrWaveform);
   Module._free(ptrSpectrum);
   Module._free(ptrCanvas);
+  Module._free(ptrDebugMessage);
 };
