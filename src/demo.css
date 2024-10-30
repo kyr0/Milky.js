@@ -1,0 +1,119 @@
+:root {
+  font-family: 'Times New Roman', Times, serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: #F0F0C0;
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+#app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.card {
+  padding: 2em;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+/* debug input visualization */
+
+#debug {
+  display: none;
+  position: fixed;
+  right: 0;
+  top: 0;
+}
+
+.debug-visualizer {
+  display: flex;
+  width: 200px;
+  height: 100px;
+  border: 1px solid #fff;
+  margin-left: 1em;
+  margin-right: 1rem;
+  background-color: #000;
+}
+
+.audio-debug-visualizer-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.default-margin {
+  margin: 0.5rem;
+  margin-bottom: 0;
+}
+
+.block {
+  display: block;
+}
+
+/* media source input select */
+
+select, button, input {
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
+  padding: 0.5rem;
+}
+
+#toolbar {
+  display: none;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+#screen-container {
+  display: flex;;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+#geiss-ini {
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.screen {
+  display: none;
+  width: 640px;
+  height: 400px;
+  border: 1px solid #fff;
+  image-rendering: pixelated; /* pixelated rendering */
+  background-color: #000;
+}

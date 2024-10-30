@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/ico" href="/icon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Geiss.js</title>
+</head>
+
+<body>
+  <div id="app">
+    <h1><img src="/icon.ico" /> GEISS.js</h1>
+    <p class="read-the-docs">
+      A clean room implementation of the famous music visualizer in WebAssembly & JIT-optimized JavaScript code, using
+      Web Audio API, Canvas API, SIMD
+      vector
+      intrinsics and DMA.
+    </p>
+
+    <div id="toolbar" class="card">
+      Source
+      <select id="audio-input-selector"></select>
+
+      rendered in
+
+      <select id="render-size-selector">
+        <option value="320x180">320x180</option>
+        <option value="640x360">640x360</option>
+        <option value="854x480">854x480</option>
+        <option value="1280x720">1280x720</option>
+        <option value="1366x768">1366x768</option>
+        <option value="1600x900">1600x900</option>
+        <option value="1920x1080">1920x1080</option>
+        <option value="2560x1440">2560x1440</option>
+      </select>
+
+      displayed as
+      <select id="display-size-selector">
+        <option value="320x180">320x180</option>
+        <option value="640x360">640x360</option>
+        <option value="854x480">854x480</option>
+        <option value="1280x720">1280x720</option>
+        <option value="1366x768">1366x768</option>
+        <option value="1600x900">1600x900</option>
+        <option value="1920x1080">1920x1080</option>
+        <option value="2560x1440">2560x1440</option>
+      </select>
+
+      in
+
+      <label id="debug-mode-label" for="debug-mode">
+        <input type="checkbox" id="debug-mode" />
+        debug mode
+      </label>
+
+      <button>FULLSCREEN</button>
+    </div>
+
+    <div id="debug">
+      <div class="audio-debug-visualizer-container default-margin">
+        <div>
+          <strong>DOWNMIX</strong> WAVEFORM
+          <canvas id="input-waveform" class="debug-visualizer"></canvas>
+        </div>
+      </div>
+
+      <div class="audio-debug-visualizer-container default-margin">
+        <div>
+          <strong>FFT</strong> SPECTRUM
+          <canvas id="input-spectrum" class="debug-visualizer"></canvas>
+        </div>
+      </div>
+
+      <strong>FPS: <span id="fps">-</span></strong>
+
+      <strong class="default-margin block">GEISS.INI</strong>
+
+      <textarea id="geiss-ini" rows="20"></textarea>
+    </div>
+
+    <div id="screen-container" class="card">
+      <canvas id="screen" class="screen" width="320" height="200"></canvas>
+      <button id="start" type="button">Start</button>
+
+      <span>2024 by Aron Homberg (<a target="_blank" href="https://github.com/kyr0">kyr0</a>)</span>
+    </div>
+  </div>
+
+  <script type="module" src="/src/demo.ts"></script>
+</body>
+
+</html>
