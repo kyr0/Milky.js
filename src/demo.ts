@@ -75,6 +75,7 @@ async function setupStartButton(startButtonEl: HTMLButtonElement) {
   const videoDisplayResolutionEl = document.querySelector<HTMLInputElement>('#video-display-resolution')!
   const fullscreenButtonEl = document.querySelector<HTMLButtonElement>('#fullscreen-button')!
   const renderDelayInputEl = document.querySelector<HTMLInputElement>('#delay')!
+  const debugSignalEl = document.querySelector<HTMLDivElement>('#debug-signal')!;
 
   versionTagEl.innerText = `v${packageJson.version}`;
   repositoryLinkEl.href = packageJson.repository.url;
@@ -230,6 +231,18 @@ async function setupStartButton(startButtonEl: HTMLButtonElement) {
 
   fullscreenButtonEl.addEventListener('click', () => {
     screenEl.requestFullscreen();
+  });
+
+  window.addEventListener('SignalEvent', (event: Event) => {
+    const customEvent = event as CustomEvent;
+
+    console.log('SignalEvent CATCH:', customEvent.detail);  
+    // capture SignalEvent and update #debug-signal with the info
+    debugSignalEl.textContent = customEvent.detail.signalMessage;
+
+    setTimeout(() => {
+      debugSignalEl.innerHTML = '&ndash;';
+    }, 500);
   });
 }
 

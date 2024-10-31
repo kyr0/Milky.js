@@ -15,6 +15,11 @@ void smoothBassEmphasizedWaveform(
     }
 }
 
+#include <math.h>
+#include <stdint.h>
+#include <stddef.h>
+
+void setPixel(uint8_t *frame, size_t width, size_t x, size_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
 void renderWaveform(
     float timeFrame,
@@ -58,6 +63,7 @@ void renderWaveform(
         setPixel(frame, canvasWidthPx, x, y, 255, 255, 255, 255);
     }
 }
+
 
 /* non-trigonometric 
 void renderWaveform(

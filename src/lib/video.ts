@@ -1,5 +1,27 @@
 import getWasmModule from "./.gen/video";
 
+// Hook console.log and console.error to detect messages starting with "native:SIGNAL:"
+const originalConsoleLog = console.log;
+
+console.log = (...args: any[]) => {
+  if (typeof args[0] === 'string' && args[0].startsWith('native:SIGNAL:')) {
+    // split the message by 'native:SIGNAL:' and parse the rest
+    const [, signalMessage] = args[0].split('native:SIGNAL:');
+
+    // create a custom event with the signal message
+    const event = new CustomEvent('SignalEvent', { detail: { signalMessage } });
+
+    console.log('Detected signal:', signalMessage);
+    // dispatch the custom event
+    window.dispatchEvent(event);
+
+    // handle the parsed signal message
+    //originalConsoleLog('Detected signal:', signalMessage, ...args.slice(1));
+  } else {
+    originalConsoleLog(...args);
+  }
+};
+
 export interface WasmModule {
   _malloc: (bytes: number) => number;
   _free: (ptr: number) => void;
@@ -36,6 +58,7 @@ let currentHeightPx = 0;
 
 export const initWasm = async (module?: WasmModule): Promise<WasmModule> => {
   Module = module || await getWasmModule();
+
 
   // Allocate memory for the waveform, spectrum, and presets buffers once
   ptrWaveform = Module._malloc(576 * Uint8Array.BYTES_PER_ELEMENT);

@@ -73,6 +73,7 @@ h1 {
 
 #debug {
   display: none;
+  font-family: 'Courier New', Courier, monospace;
   position: fixed;
   right: 0;
   top: 0;
@@ -83,6 +84,7 @@ h1 {
 #debug-mode-label { 
   display: none; 
   position: fixed; 
+  font-family: 'Courier New', Courier, monospace;
   right: 12px; 
   gap: 0.25rem;
   justify-content: center;
@@ -163,7 +165,6 @@ select, button, input {
 }
 
 #geiss-ini {
-  font-family: 'Courier New', Courier, monospace;
   width: 200px;
 }
 
@@ -187,4 +188,14 @@ select, button, input {
 
 #delay {
   width: 40px;
+}
+
+#debug-signal {
+  display: block;
+  color: #fff;
+  font-weight: bold;
+  width: 200px;
+  border: 2px solid #cc0000;
+  margin: 0.5rem;
+  padding: 0;
 }
