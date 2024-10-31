@@ -13,7 +13,7 @@ declare namespace RuntimeExports {
     let HEAPU64: any;
 }
 interface WasmModule {
-  _render(_0: number, _1: number, _2: number, _3: number, _4: number, _5: number, _6: number, _7: number): void;
+  _render(_0: number, _1: number, _2: number, _3: number, _4: number, _5: number, _6: number, _7: number, _8: number, _9: number): void;
   _malloc(_0: number): number;
   _free(_0: number): void;
 }

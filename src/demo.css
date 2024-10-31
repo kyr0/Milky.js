@@ -2,11 +2,9 @@
   font-family: 'Times New Roman', Times, serif;
   line-height: 1.5;
   font-weight: 400;
-
   color-scheme: light dark;
   color: #F0F0C0;
   background-color: #242424;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -16,25 +14,39 @@
 body {
   margin: 0;
   display: flex;
-  place-items: center;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   min-width: 320px;
   min-height: 100vh;
 }
 
 h1 {
-  font-size: 3.2em;
+  font-size: 2.5em;
   line-height: 1.1;
+  margin: 0.5em 0;
 }
 
 #app {
-  max-width: 1280px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem;
   text-align: center;
 }
 
+@media (max-width: 768px) {
+  #app {
+    padding: 0;
+  }
+}
+
 .card {
-  padding: 2em;
+  padding: 1.5em;
+  margin: 0.5em;
+}
+
+.read-the-docs {
+  padding: 1rem;
 }
 
 @media (prefers-color-scheme: light) {
@@ -50,6 +62,13 @@ h1 {
   }
 }
 
+h1 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-items: center;
+}
+
 /* debug input visualization */
 
 #debug {
@@ -57,15 +76,36 @@ h1 {
   position: fixed;
   right: 0;
   top: 0;
+  padding: 1rem;
+  background-color: #000000aa;
 }
+
+#debug-mode-label { 
+  display: none; 
+  position: fixed; 
+  right: 12px; 
+  gap: 0.25rem;
+  justify-content: center;
+  align-items: center;
+  top: 6px; 
+  z-index: 1000; 
+  white-space: nowrap; 
+  width: fit-content;
+}
+
+#debug-fps-counter {
+  display: flex;
+  margin-top: 1.25rem;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
 
 .debug-visualizer {
   display: flex;
   width: 200px;
   height: 100px;
   border: 1px solid #fff;
-  margin-left: 1em;
-  margin-right: 1rem;
   background-color: #000;
 }
 
@@ -84,36 +124,67 @@ h1 {
   display: block;
 }
 
+.screen {
+  display: none;
+  height: auto;
+  image-rendering: pixelated; /* pixelated rendering */
+  background-color: #000;
+  cursor: none; /* hide mouse cursor */
+}
+
 /* media source input select */
 
 select, button, input {
   font-family: 'Courier New', Courier, monospace;
   font-weight: bold;
   padding: 0.5rem;
+  width: 100%;
+  max-width: 200px;
 }
 
 #toolbar {
   display: none;
+  flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
 }
 
 #screen-container {
-  display: flex;;
+  display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
 }
 
-#geiss-ini {
-  font-family: 'Courier New', Courier, monospace;
+.screen-panel {
+  border: 1px solid #fff;
 }
 
-.screen {
-  display: none;
-  width: 640px;
-  height: 400px;
-  border: 1px solid #fff;
-  image-rendering: pixelated; /* pixelated rendering */
-  background-color: #000;
+#geiss-ini {
+  font-family: 'Courier New', Courier, monospace;
+  width: 200px;
+}
+
+#video-render-resolution, #video-display-resolution {
+  width: 75px;
+}
+
+#video-render-bitdepth-selector {
+  width: 55px;
+}
+
+#fullscreen-button {
+  width: 100px;
+} 
+
+#version-tag {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.75em;
+  font-style: italic;
+}
+
+#delay {
+  width: 40px;
 }

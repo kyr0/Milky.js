@@ -1,11 +1,13 @@
-import { type ErrorCallbackFn, Geiss } from './global.ts';
+import { type ErrorCallbackFn, Geiss, geissDefaults } from './global.ts';
 
 export let activeAudioStream: MediaStream | null = null;
 export let audioContext: AudioContext;
+export let audioMerger: ChannelMergerNode | null = null;
 export let audioStreamNode: MediaStreamAudioSourceNode | null = null;
 export let fftAnalyzer: AnalyserNode | null = null;
+let audioStreamCaptureListenerId = 0;
 
-export type OnAudioFrameCallbackFn = (waveform: Uint8Array, spectrum: Uint8Array) => void;
+export type OnAudioFrameCallbackFn = (waveform: Uint8Array, spectrum: Uint8Array, audioCaptureListenerId: number) => void;
 
 export interface AudioCaptureOptions {
   fftSize: number;
@@ -14,9 +16,9 @@ export interface AudioCaptureOptions {
 }
 
 export const defaultAudioCaptureOptions: AudioCaptureOptions = {
-  fftSize: 2048,
-  bufferSize: 576,
-  delayMs: 16,
+  fftSize: geissDefaults.fftSize,
+  bufferSize: geissDefaults.waveformSamples,
+  delayMs: geissDefaults.renderDelayMs,
 };
 
 let lastDrawTime = 0;
@@ -103,7 +105,10 @@ export async function captureAndAnalyzeAudioStream(
   onFrame: OnAudioFrameCallbackFn, 
   opts: Partial<AudioCaptureOptions> = {}, 
   onError: ErrorCallbackFn = console.error
-) {
+): Promise<number | undefined> {
+  audioStreamCaptureListenerId++;
+
+  const audioCaptureListenerId = audioStreamCaptureListenerId;
 
   const options = validateAudioCaptureOptions(opts);
 
@@ -111,15 +116,8 @@ export async function captureAndAnalyzeAudioStream(
   const waveformData: Uint8Array = new Uint8Array(options.bufferSize);
   
   try {
-    if (activeAudioStream) {
-      activeAudioStream.getTracks().forEach(track => track.stop());
-      activeAudioStream = null;
-    }
-
-    if (audioStreamNode) {
-      audioStreamNode.disconnect();
-      audioStreamNode = null;
-    }
+    // Disconnect in the correct order
+    disconnectAudioNodes();
 
     activeAudioStream = await navigator.mediaDevices.getUserMedia({
       audio: { 
@@ -130,15 +128,43 @@ export async function captureAndAnalyzeAudioStream(
       }
     });
 
-    if (activeAudioStream) {
-      audioStreamNode = getAudioContext().createMediaStreamSource(activeAudioStream);
-      const downmix = getAudioContext().createChannelMerger(1); // downmix all channels into a single channel (mono)
-      audioStreamNode.connect(downmix);
-      
-      await analyzeAudioStream(downmix, spectrumData, waveformData, options, onFrame);
-    }
+    audioStreamNode = getAudioContext().createMediaStreamSource(activeAudioStream);
+    audioMerger = getAudioContext().createChannelMerger(1); // downmix all channels into a single channel (mono)
+
+    audioStreamNode.connect(audioMerger);
+    
+    await analyzeAudioStream(audioMerger, spectrumData, waveformData, options, audioCaptureListenerId, onFrame);
+
+    return audioStreamCaptureListenerId;
+  
   } catch (error) {
     onError(error);
+  }
+}
+
+function disconnectAudioNodes() {
+  if (fftAnalyzer) {
+    fftAnalyzer.disconnect();
+    fftAnalyzer = null;
+    console.log('fftAnalyzer disconnected');
+  }
+
+  if (audioStreamNode) {
+    audioStreamNode.disconnect();
+    audioStreamNode = null;
+    console.log('audioStreamNode disconnected');
+  }
+
+  if (audioMerger) {
+    audioMerger.disconnect();
+    audioMerger = null;
+    console.log('audioMerger disconnected');
+  }
+
+  if (activeAudioStream) {
+    activeAudioStream.getTracks().forEach(track => track.stop());
+    activeAudioStream = null;
+    console.log('activeAudioStream disconnected');
   }
 }
 
@@ -147,11 +173,13 @@ export async function analyzeAudioStream(
   spectrumData: Uint8Array, 
   waveformData: Uint8Array, 
   options: AudioCaptureOptions, 
+  audioCaptureListenerId: number,
   onFrame: OnAudioFrameCallbackFn
 ) {
   if (fftAnalyzer) {
     fftAnalyzer.disconnect(); // disconnect previous analyzer
     fftAnalyzer = null;
+    console.log('fftAnalyzer disconnected');
   }
 
   // create a new AnalyserNode for audio analysis
@@ -164,6 +192,10 @@ export async function analyzeAudioStream(
 
   const analyze = () => {
     requestAnimationFrame(analyze);
+
+    if (!fftAnalyzer) {
+      return;
+    }
 
     // fill the arrays with the current audio frame's data
     fftAnalyzer!.getByteFrequencyData(frequencySpectrumData);
@@ -199,8 +231,11 @@ export async function analyzeAudioStream(
 
     // throttle frame updates to the specified delayMs
     if (now - lastDrawTime >= options.delayMs) {
-      onFrame(timeDomainWaveformData, frequencySpectrumData);
-      lastDrawTime = now; // update last draw time
+      // ensure the listener is still valid before calling onFrame
+      if (audioCaptureListenerId === audioStreamCaptureListenerId) {
+        onFrame(timeDomainWaveformData, frequencySpectrumData, audioCaptureListenerId);
+        lastDrawTime = now; // update last draw time
+      }
     }
   };
   analyze();

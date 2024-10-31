@@ -1,23 +1,51 @@
 import { persistentAtom } from '@nanostores/persistent'
 import { initWasm } from './video';
 
+// fast lookup map (access by reference)
 export const canvasContexts: Map<string, CanvasRenderingContext2D> = new Map();
 
 export type ErrorCallbackFn = (error: unknown) => void;
 
 export interface Geiss {
   audioInputDeviceId: string;
+  
   isInDebugMode: boolean;
+
   renderWidth: number;
   renderHeight: number;
+
+  bitDepth: number;
+
+  waveformSamples: number;
+  fftSize: number; // power of 2
+
+  renderDelayMs: number;
+
+  displayWidth: number;
+  displayHeight: number;
 }
 
-export const Geiss = persistentAtom<Geiss>('geiss', {
+export const geissDefaults: Geiss = {
   audioInputDeviceId: '',
+
   isInDebugMode: true,
+
+  bitDepth: 8,
+
+  waveformSamples: 576,
+  fftSize: 2048,
+
+  renderDelayMs: 14,
+  
   renderWidth: 320,
-  renderHeight: 200,
-}, {
+  renderHeight: 180,
+
+  // 16:9 aspect ratio
+  displayWidth: 640,
+  displayHeight: 360,
+};
+
+export const Geiss = persistentAtom<Geiss>('geiss', geissDefaults, {
   // persistene encoding and decoding
   encode: JSON.stringify,
   decode: JSON.parse,

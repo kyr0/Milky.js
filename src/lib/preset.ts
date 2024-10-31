@@ -1,11 +1,15 @@
-export interface IniSection {
+import presetIni from './preset.ini?raw';
+
+export interface PresetSection {
   presetNumber: number;
   [key: string]: number;
 }
 
-export type IniResult = Array<IniSection>;
+export type Preset = Array<PresetSection>;
 
+// Geiss only used 33 properties per preset, but we reseve 64 for future use -- Geiss MUST live forever! ;)
 const MAX_PROPERTY_COUNT_PER_PRESET = 64;
+const MAX_PRESET_COUNT = 100;
 
 // pre-computed, sorted list of well-known property names (encoder/decoder are order-sensitive)
 export const wellKnownIniPropertyNames = [
@@ -15,11 +19,11 @@ export const wellKnownIniPropertyNames = [
   't1', 't2', 'volpos', 'wave', 'x_center', 'y_center'
 ] //.sort((a, b) => a.localeCompare(b));
 
-export function parseIni(text: string): IniResult {
-  const result: IniResult = [];
-  let currentSection: IniSection | null = null;
+export function parsePreset(text: string): Preset {
+  const result: Preset = [];
+  let currentSection: PresetSection | null = null;
 
-  const checkMissingProperties = (section: IniSection) => {
+  const checkMissingProperties = (section: PresetSection) => {
     const missingProperties = wellKnownIniPropertyNames.filter(
       propName => !(propName in section)
     );
@@ -40,7 +44,7 @@ export function parseIni(text: string): IniResult {
       if (currentSection) {
         checkMissingProperties(currentSection);
       }
-      currentSection = { presetNumber: parseInt(sectionMatch[1], 10) };
+      currentSection = { presetNumber: Number.parseInt(sectionMatch[1], 10) };
       result.push(currentSection);
       return;
     }
@@ -49,7 +53,7 @@ export function parseIni(text: string): IniResult {
     const keyValueMatch = line.match(/^([^=]+)=(.*)$/);
     if (keyValueMatch && currentSection) {
       const key = keyValueMatch[1].trim();
-      const value = parseFloat(keyValueMatch[2].trim()); // always parse as number
+      const value = Number.parseFloat(keyValueMatch[2].trim()); // always parse as number
       currentSection[key] = value;
     }
   });
@@ -61,8 +65,8 @@ export function parseIni(text: string): IniResult {
   return result;
 }
 
-export function encodeIni(iniResult: IniResult): Float32Array {
-  const floatArray = new Float32Array(iniResult.length * MAX_PROPERTY_COUNT_PER_PRESET);
+export function encodePreset(iniResult: Preset): Float32Array {
+  const floatArray = new Float32Array(iniResult.length * MAX_PROPERTY_COUNT_PER_PRESET * MAX_PRESET_COUNT);
 
   iniResult.forEach((section, sectionIndex) => {
     let index = sectionIndex * MAX_PROPERTY_COUNT_PER_PRESET;
@@ -77,12 +81,12 @@ export function encodeIni(iniResult: IniResult): Float32Array {
   return floatArray;
 }
 
-export function decodeIni(floatArray: Float32Array, propertyNames: Array<string>): IniResult {
-  const iniResult: IniResult = [];
+export function decodePreset(floatArray: Float32Array, propertyNames: Array<string>): Preset {
+  const iniResult: Preset = [];
   const sectionSize = MAX_PROPERTY_COUNT_PER_PRESET;
 
   for (let sectionIndex = 0; sectionIndex < floatArray.length / sectionSize; sectionIndex++) {
-    const section: IniSection = { presetNumber: sectionIndex + 1 };
+    const section: PresetSection = { presetNumber: sectionIndex + 1 };
     let index = sectionIndex * sectionSize;
 
     propertyNames.forEach((propertyName) => {
@@ -96,7 +100,7 @@ export function decodeIni(floatArray: Float32Array, propertyNames: Array<string>
   return iniResult;
 }
 
-export function stringifyIni(iniResult: IniResult): string {
+export function stringifyPreset(iniResult: Preset): string {
   return iniResult.map(section => {
     const sectionHeader = `[PRESET ${section.presetNumber}]`;
     const keyValuePairs = Object.entries(section)
@@ -110,3 +114,5 @@ export function stringifyIni(iniResult: IniResult): string {
     return `${sectionHeader}\n${keyValuePairs}`;
   }).join('\n\n');
 }
+
+export const defaultPreset: Preset = parsePreset(presetIni);

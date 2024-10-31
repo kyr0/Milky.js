@@ -1,7 +1,7 @@
 {
   "name": "geiss.js",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1-alpha.1",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -19,7 +19,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && tsx scripts/build.ts",
-    "preview": "vite preview",
+    "preview": "vite preview demo.html",
     "cc": "tsx scripts/cc.ts"
   },
   "files": [
@@ -30,6 +30,10 @@
   ],
   "author": "Aron Homberg <info@aron-homberg.de>",
   "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kyr0/geiss.js.git"
+  },
   "devDependencies": {
     "@types/node": "^22.8.4",
     "pkgroll": "^2.5.1",
