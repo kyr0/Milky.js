@@ -5,15 +5,20 @@ export function drawInputWaveform(dataArray: Uint8Array) {
   const canvas = canvasCtx.canvas;
   canvas.style.display = 'block';
 
-  // Clear the canvas with transparency for a fresh frame
-  canvasCtx.globalCompositeOperation = 'destination-out';
-  canvasCtx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // semi-transparent black
-  canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-  canvasCtx.globalCompositeOperation = 'source-over';
+  // Clear the entire canvas for a fresh frame
+  canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
   canvasCtx.beginPath();
 
   const sliceWidth = canvas.width / (dataArray.length / 2);
   let x = 0;
+
+  /*
+    // Clear the canvas with transparency for a fresh frame
+    canvasCtx.globalCompositeOperation = 'destination-out';
+    canvasCtx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // semi-transparent black
+    canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+    canvasCtx.globalCompositeOperation = 'source-over';
+  */
 
   // Start the path at the middle of the canvas height for centering
   canvasCtx.moveTo(0, canvas.height / 2);

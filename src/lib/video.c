@@ -1,15 +1,21 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 
-#include "./video/log.c"
 #include "./video/preset.c"
 #include "./video/draw.c"
 #include "./video/sound.c"
 #include "./video/warp.c"
+#include "./video/palette.c"
+
+// local variable to track if it's the initial render
+static int isInitialRender = 1;  
+float timeFrame = 0.0f;
 
 void render(
-    uint8_t *canvas,                // Canvas buffer (RGBA format)
+    uint8_t *frame,                 // Canvas frame buffer (RGBA format)
+    uint8_t *prevFrame,             // Previous canvas frame buffer (RGBA format, backbuffer)
     size_t canvasWidthPx,           // Canvas width in pixels
     size_t canvasHeightPx,          // Canvas height in pixels
     const uint8_t *waveform,        // Waveform data array, 8-bit unsigned integers, 576 samples
@@ -17,27 +23,61 @@ void render(
     size_t waveformLength,          // Length of the waveform data array
     size_t spectrumLength,          // Length of the spectrum data array
     uint8_t bitDepth,               // Bit depth of the rendering
-    uint8_t *msg,                   // Message buffer
-    float *presetsBuffer            // Preset data
+    float *presetsBuffer           // Preset data
 ) {
-    size_t canvasSize = canvasWidthPx * canvasHeightPx * 4; // Each pixel has 4 components (RGBA)
+    size_t frameSize = canvasWidthPx * canvasHeightPx * 4; // Each pixel has 4 components (RGBA)
     
+    // Apply rendering effects on top of the faded previous frame
+  
     // parse presets
     parseFlattenedPresetBuffer(presetsBuffer, MAX_PRESETS * MAX_PROPERTY_COUNT_PER_PRESET);
 
     // test receiving some value for preset 1
     float xCenterValue = getPresetPropertyByName(0, "x_center");
-    consoleLog(msg, "x_center value: %f", xCenterValue);
+    fprintf(stdout, "x_center value: %f\n", xCenterValue);
+
+    fprintf(stdout, "isInitialRender: %d\n", isInitialRender);
 
     float emphasizedWaveform[waveformLength];
-    smoothBassEmphasizedWaveform(waveform, waveformLength, emphasizedWaveform, canvasWidthPx);
+    smoothBassEmphasizedWaveform(waveform, waveformLength, emphasizedWaveform, canvasWidthPx, 1.2f);
 
-    clearCanvas(canvas, canvasSize);
+    if (isInitialRender) {
+        timeFrame = 0.1f;
+        clearFrame(frame, frameSize);
+        isInitialRender = 0; // Set to false after the first render
+    } else {
 
-    renderWaveform(canvas, canvasWidthPx, canvasHeightPx, emphasizedWaveform, waveformLength);
+        timeFrame += 0.6f;
+        // Copy last frame's data to canvas buffer as a base to overdraw
+        memcpy(frame, prevFrame, frameSize);
+
+        // Apply a slight fade to simulate decay and create trails
+        for (size_t i = 0; i < frameSize; i += 4) {
+            frame[i] = (uint8_t)(frame[i] * 0.95);         // R
+            frame[i + 1] = (uint8_t)(frame[i + 1] * 0.95); // G
+            frame[i + 2] = (uint8_t)(frame[i + 2] * 0.95); // B
+            // Alpha channel can be left as is or manipulated for transparency effects
+        }
+    }
+
+    generatePalette();    
+
+    renderTwoChasers(timeFrame, frame, canvasWidthPx, canvasHeightPx);
+    renderWaveform(timeFrame, frame, canvasWidthPx, canvasHeightPx, emphasizedWaveform, waveformLength);
+
+    // Dithering after effects are rendered
+    applyDitheringAcrossCanvas(frame, canvasWidthPx, canvasHeightPx);
+
+    // Copy the result back to prevFrame for the next render cycle if needed
+    memcpy(prevFrame, frame, frameSize);
+}
+
+
+
+/*
 
     // Create a temporary buffer to store the warped image
-    uint8_t *warpedCanvas = (uint8_t *)malloc(canvasSize);
+    uint8_t *warpedCanvas = (uint8_t *)malloc(frameSize);
     if (!warpedCanvas) {
         consoleLog(msg, "Failed to allocate memory for warped canvas");
         return;
@@ -51,7 +91,6 @@ void render(
         return;
     }
 
-/*
     initializeWarpMap(warpMap, canvasWidthPx, canvasHeightPx);
 
     // Apply the warp using the warp map
@@ -59,9 +98,10 @@ void render(
 
     // Copy the warped image back to the original canvas
     memcpy(canvas, warpedCanvas, canvasSize);
-*/
+
 
     // Free allocated memory
     free(warpedCanvas);
     free(warpMap);
-}
+    */
+
