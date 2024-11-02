@@ -157,12 +157,13 @@ async function setupStartButton(startButtonEl: HTMLButtonElement) {
         // render the actual visualizer frame
         renderFrame(
           screenContext, 
-          waveform.slice(0, Geiss.get().waveformSamples || geissDefaults.waveformSamples), 
+          waveform, //.slice(0, Geiss.get().waveformSamples || geissDefaults.waveformSamples), 
           spectrum, 
           Geiss.get().renderWidth || geissDefaults.renderWidth, 
           Geiss.get().renderHeight || geissDefaults.renderHeight,
           Geiss.get().bitDepth || geissDefaults.bitDepth,
           currentPresetEncoded,
+          0
         );
 
         // calculate FPS after rendering
@@ -242,7 +243,7 @@ async function setupStartButton(startButtonEl: HTMLButtonElement) {
 
     setTimeout(() => {
       debugSignalEl.innerHTML = '&ndash;';
-    }, 500);
+    }, 250);
   });
 }
 

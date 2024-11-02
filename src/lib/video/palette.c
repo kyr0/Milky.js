@@ -2,23 +2,25 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <time.h>
 
 #define PALETTE_SIZE 256
 #define MAX_COLOR 63
 
 // Define a palette as an array of 256 RGB color values
 uint8_t palette[PALETTE_SIZE][3];
+static clock_t lastPaletteInitTime = 0;
 
-// Function to set an RGB color in the palette at a specific index
 void setRGB(uint8_t index, uint8_t r, uint8_t g, uint8_t b) {
-    // `index` is guaranteed to be in the range 0-255 since it's uint8_t
     palette[index][0] = r; // Set red component
     palette[index][1] = g; // Set green component
     palette[index][2] = b; // Set blue component
 }
 
-// Palette generator function
 void generatePalette() {
+    // Seed the random number generator with the current time
+    srand((unsigned int)time(NULL));
+
     int paletteType = rand() % 4;
 
     switch (paletteType) {
@@ -34,7 +36,10 @@ void generatePalette() {
 
         case 2: // "amber sun"
             for (int a = 0; a < 64; a++) setRGB(a, (uint8_t)(sqrtf(a) * 8), a, a * a / 64);
-            for (int a = 64; a < PALETTE_SIZE; a++) setRGB(a, MAX_COLOR, MAX_COLOR, MAX_COLOR);
+            for (int a = 64; a < PALETTE_SIZE; a++) {
+                uint8_t fadeValue = (uint8_t)((PALETTE_SIZE - a) * MAX_COLOR / (PALETTE_SIZE - 64));
+                setRGB(a, fadeValue, fadeValue, fadeValue); // Gradually fade to darkness
+            }
             break;
 
         case 3: // "frosty"
@@ -44,9 +49,15 @@ void generatePalette() {
     }
 }
 
-// Function to apply the current palette to the canvas
-void applyPaletteToCanvas(uint8_t *canvas, size_t width, size_t height) {
+
+void applyPaletteToCanvas(size_t currentTime, uint8_t *canvas, size_t width, size_t height) {
     size_t frameSize = width * height;
+
+    // Skip palette generation every 11 beats and 80% of the time
+    if ((energySpikeDetected && currentTime - lastPaletteInitTime > 10 * 1000) || lastPaletteInitTime == 0) {
+        generatePalette(); // Reinitialize the palette
+        lastPaletteInitTime = currentTime; // Update the last initialization time
+    }
     
     for (size_t i = 0; i < frameSize; i++) {
         uint8_t colorIndex = canvas[i * 4]; // Use the red channel as intensity, assuming it’s within bounds.

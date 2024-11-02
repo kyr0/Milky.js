@@ -1,7 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { spawn, ChildProcess } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { watch } from 'node:fs';
+
+let currentCompileProcess: ChildProcess | null = null;
 
 const fileToDataUrl = async (filePath: string): Promise<string> => {
   try {
@@ -22,8 +24,14 @@ const compileCCode = () => {
     mkdirSync('src/lib/.gen', { recursive: true });
   }
 
+  // If there's an existing compile process, terminate it
+  if (currentCompileProcess) {
+    console.log('Terminating previous compile process...');
+    currentCompileProcess.kill('SIGTERM');
+  }
+
   // Command to compile the C code with emscripten
-  const result = spawnSync('emcc', [
+  currentCompileProcess = spawn('emcc', [
     'src/lib/video.c',
     '-s',
     `EXPORTED_FUNCTIONS=["_render", "_malloc", "_free"]`,
@@ -35,16 +43,22 @@ const compileCCode = () => {
     '0',
     '-gsource-map',
     '--emit-tsd',
-    'video.d.ts'
+    'video.d.ts',
+    '-s',
+    `TOTAL_MEMORY=${1024 * 1024 * 256}`// Set max memory to 1GB (very high)
   ], {
     stdio: 'inherit'
   });
 
-  if (result.error) {
-    console.error('Error executing emcc:', result.error);
-  } else {
-    console.log('Done.');
-  }
+  currentCompileProcess.on('close', async(code) => {
+    if (code !== 0 && code !== null /* null means SIGTERM, killed because of re-start */) {
+      console.error('Error executing emcc:', code);
+    } else {
+      console.log('Done.');
+      await updateWasmBinary();
+    }
+    currentCompileProcess = null;
+  });
 };
 
 const updateWasmBinary = async () => {
@@ -83,7 +97,6 @@ wasmBinary = dataUrlToUint8Array(wasmBinaryFile);
 
 // Initial compilation
 compileCCode();
-await updateWasmBinary();
 
 console.log('Watching for changes in C files...');
 
@@ -92,6 +105,5 @@ watch('./src', { recursive: true }, async (eventType, filename) => {
   if (filename && filename.endsWith('.c')) {
     console.log(`Change detected in: ${filename}`);
     compileCCode();
-    await updateWasmBinary();
   }
 });

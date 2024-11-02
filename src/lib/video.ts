@@ -27,7 +27,6 @@ export interface WasmModule {
   _free: (ptr: number) => void;
   _render: (
     ptrFrame: number, 
-    ptrPrevFrame: number, 
     canvasWidthPx: number,
     canvasHeightPx: number, 
     ptrWaveformBuffer: number, 
@@ -35,7 +34,9 @@ export interface WasmModule {
     waveformBufferLength: number, 
     spectrumBufferLength: number,
     bitDepth: number,
-    ptrPresetsBuffer: number
+    ptrPresetsBuffer: number,
+    speed: number,
+    currentTimestamp: number,
   ) => void;
   HEAPU8: {
     set: (data: Uint8Array, offset: number) => void;
@@ -49,7 +50,6 @@ export interface WasmModule {
 
 let Module: WasmModule;
 let ptrFrame: number;
-let ptrPrevFrame: number;
 let ptrWaveform: number;
 let ptrSpectrum: number;
 let ptrPresets: number;
@@ -59,10 +59,9 @@ let currentHeightPx = 0;
 export const initWasm = async (module?: WasmModule): Promise<WasmModule> => {
   Module = module || await getWasmModule();
 
-
   // Allocate memory for the waveform, spectrum, and presets buffers once
-  ptrWaveform = Module._malloc(576 * Uint8Array.BYTES_PER_ELEMENT);
-  ptrSpectrum = Module._malloc(576 * Uint8Array.BYTES_PER_ELEMENT);
+  ptrWaveform = Module._malloc(2048 * Uint8Array.BYTES_PER_ELEMENT);
+  ptrSpectrum = Module._malloc(1024 * Uint8Array.BYTES_PER_ELEMENT);
   ptrPresets = Module._malloc(100 * Float32Array.BYTES_PER_ELEMENT);
 
   return Module;
@@ -75,21 +74,25 @@ export const renderFrame = (
   widthPx: number,
   heightPx: number,
   bitDepth: number,
-  presets: Float32Array
+  presets: Float32Array,
+  fps: number,
 ): void => {
+  /*
+  const maxFps = 20;
+  const frameInterval = Math.floor(fps / maxFps);
+
+  // Return early if the current frame should be skipped
+  if (frameInterval > 1 && Math.floor(performance.now() / (1000 / maxFps)) % frameInterval !== 0) {
+    return;
+  }
+    */
+
   const frameSize = widthPx * heightPx * 4;
 
-  // Check if width or height has changed
+  // Reallocate if dimensions changed
   if (widthPx !== currentWidthPx || heightPx !== currentHeightPx) {
-    // Free previous frame buffers
     if (ptrFrame) Module._free(ptrFrame);
-    if (ptrPrevFrame) Module._free(ptrPrevFrame);
-
-    // Allocate new frame buffers
     ptrFrame = Module._malloc(frameSize);
-    ptrPrevFrame = Module._malloc(frameSize);
-
-    // Update current dimensions
     currentWidthPx = widthPx;
     currentHeightPx = heightPx;
   }
@@ -98,30 +101,32 @@ export const renderFrame = (
   Module.HEAPU8.set(spectrum, ptrSpectrum / Uint8Array.BYTES_PER_ELEMENT);
   Module.HEAPF32.set(presets, ptrPresets / Float32Array.BYTES_PER_ELEMENT);
 
-  // Call the render function in WebAssembly module
+  // Call WebAssembly render
   Module._render(
     ptrFrame,
-    ptrPrevFrame,
-    widthPx, 
-    heightPx, 
-    ptrWaveform, 
-    ptrSpectrum, 
-    waveform.length, 
-    spectrum.length, 
+    widthPx,
+    heightPx,
+    ptrWaveform,
+    ptrSpectrum,
+    waveform.length,
+    spectrum.length,
     bitDepth,
-    ptrPresets
+    ptrPresets,
+    0.03,
+    performance.now(),
   );
 
-  // Draw the ImageData onto the canvas
+  // Draw to canvas
   context.putImageData(
     new ImageData(
-      new Uint8ClampedArray(Module.HEAPU8.buffer, ptrFrame, frameSize), 
-      widthPx, 
+      new Uint8ClampedArray(new Uint8Array(Module.HEAPU8.buffer, ptrFrame, frameSize)),
+      widthPx,
       heightPx
-    ), 
-    0, 
+    ),
+    0,
     0
   );
-}
+};
+
 
 export const wellKnownBitDepths = [8, 16, 24, 32];

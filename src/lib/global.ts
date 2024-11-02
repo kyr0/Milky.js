@@ -30,19 +30,19 @@ export const geissDefaults: Geiss = {
 
   isInDebugMode: true,
 
-  bitDepth: 8,
+  bitDepth: 32,
 
-  waveformSamples: 576,
-  fftSize: 2048,
+  waveformSamples: 2048,
+  fftSize: 1024,
 
-  renderDelayMs: 14,
+  renderDelayMs: 30,
   
-  renderWidth: 320,
-  renderHeight: 180,
+  renderWidth: 1705,
+  renderHeight: 935,
 
   // 16:9 aspect ratio
-  displayWidth: 640,
-  displayHeight: 360,
+  displayWidth: 1280,
+  displayHeight: 700,
 };
 
 export const Geiss = persistentAtom<Geiss>('geiss', geissDefaults, {
