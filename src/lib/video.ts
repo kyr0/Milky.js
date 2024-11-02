@@ -126,6 +126,8 @@ export const renderFrame = (
     0,
     0
   );
+  context.translate(0.5, 0.5);
+  context.imageSmoothingEnabled = true;
 };
 
 

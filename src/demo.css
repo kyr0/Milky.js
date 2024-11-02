@@ -129,7 +129,7 @@ h1 {
 .screen {
   display: none;
   height: auto;
-  image-rendering: pixelated; /* pixelated rendering */
+  image-rendering: optimizeQuality; /* pixelated rendering */
   background-color: #000;
   cursor: none; /* hide mouse cursor */
 }
