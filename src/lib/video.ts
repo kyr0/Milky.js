@@ -75,7 +75,7 @@ export const renderFrame = (
   heightPx: number,
   bitDepth: number,
   presets: Float32Array,
-  fps: number,
+  _fps: number,
 ): void => {
   /*
   const maxFps = 20;

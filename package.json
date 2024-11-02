@@ -19,7 +19,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && tsx scripts/build.ts",
-    "preview": "vite preview demo.html",
+    "preview": "vite preview",
     "cc": "tsx scripts/cc.ts"
   },
   "files": [

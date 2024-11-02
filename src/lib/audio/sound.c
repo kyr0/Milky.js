@@ -1,9 +1,8 @@
-#include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
-#include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 // Global variable to store the average offset introduced by smoothing
 static float averageOffset = 0.0f;

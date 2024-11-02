@@ -3,12 +3,14 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "./video/beat.c"
+// #include "./preset.c"
+
+#include "./audio/sound.c"
+#include "./audio/energy.c"
+
 #include "./video/bitdepth.c"
-// #include "./video/preset.c"
 #include "./video/transform.c"
 #include "./video/draw.c"
-#include "./video/sound.c"
 #include "./video/palette.c"
 #include "./video/effects/chaser.c"
 #include "./video/blur.c"

@@ -174,7 +174,7 @@ void detectEnergySpike(
         flux_ratio > flux_threshold && 
         current_energy > min_volume_threshold) 
     {
-        printf("native:SIGNAL:SIG_BEAT_DETECTED\n"); // Signal beat detection
+        printf("native:SIGNAL:SIG_ENERGY\n"); // Signal energy spike detection
         energySpikeDetected = 1;
         detectionCooldownCounter = 0; // Reset cooldown counter after detection
     } else {
