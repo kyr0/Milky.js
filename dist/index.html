@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/ico" href="/icon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Geiss.js</title>
+  <script type="module" crossorigin src="/assets/index-Bt0rgZ0S.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-YMATuqWW.css">
+</head>
+
+<body>
+  <div id="app">
+
+    <h1><img src="/icon.ico" /> GEISS.js</h1>
+    <p class="read-the-docs">
+      A modern implementation of a classic
+      music visualizer, inspired by <a href="https://www.geisswerks.com/geiss/" target="_blank">Ryan Geiss</a>.
+      WebAssembly & JIT-optimized JavaScript code,
+      using
+      Web Audio API, Canvas API, SIMD
+      vector
+      intrinsics and DMA.
+    </p>
+
+    <div id="toolbar">
+      <strong>Capture</strong>
+      <select id="audio-input-selector"></select>
+
+      <strong>render</strong> in
+      <input id="video-render-resolution"></input>
+
+      @
+      <select id="video-render-bitdepth-selector"></select>
+      <strong>bit</strong>, <strong>scaled</strong> to
+      <input id="video-display-resolution"></input>
+
+      with
+      <input id="delay" type="number"></input> <strong>ms delay</strong> |
+
+      <button id="fullscreen-button">FULLSCREEN</button>
+    </div>
+
+    <label id="debug-mode-label" for="debug-mode">
+      <input type="checkbox" id="debug-mode" />
+      <span>debug</span>
+    </label>
+
+    <div id="debug">
+
+      <strong id="debug-fps-counter">FPS: <span id="fps">-</span></strong>
+      <strong id="debug-signal">&ndash;</strong>
+
+      <div class="audio-debug-visualizer-container default-margin">
+        <div>
+          <strong>DOWNMIX</strong> WAVEFORM
+          <canvas id="input-waveform" class="debug-visualizer"></canvas>
+        </div>
+      </div>
+
+      <div class="audio-debug-visualizer-container default-margin">
+        <div>
+          <strong>FFT</strong> SPECTRUM
+          <canvas id="input-spectrum" class="debug-visualizer"></canvas>
+        </div>
+      </div>
+
+      <strong class="default-margin block hidden">GEISS.INI</strong>
+
+      <textarea id="geiss-ini" rows="20" class="hidden"></textarea>
+    </div>
+
+    <div id="screen-container" class="card">
+      <div class="screen-panel">
+        <canvas id="screen" class="screen" width="320" height="200"></canvas>
+      </div>
+      <button id="start" type="button">▶️ Start</button>
+
+      <span>2024 by Aron Homberg (<a target="_blank" id="repository-link">kyr0</a>)</span>
+      <span id="version-tag"></span>
+    </div>
+  </div>
+
+</body>
+
+</html>
