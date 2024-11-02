@@ -12,29 +12,25 @@ void rotate(float timeFrame, uint8_t *tempBuffer, uint8_t *screen, float speed, 
     // calculate the rotation angle based on speed and angle
     float theta = speed * angle;
 
-    // check if the last theta has reached the target theta
+    // update targetTheta if lastTheta is close enough
     if (fabs(lastTheta - targetTheta) < 0.01f) {
-        // select a new random target angle between -45 and 45 degrees
         targetTheta = (rand() % 90 - 45) * (M_PI / 180.0f);
     }
 
-    // interpolate theta towards targetTheta with a smooth transition
-    float interpolationFactor = 0.005f; // adjust for smoother transition
-    theta = lastTheta + (targetTheta - lastTheta) * interpolationFactor;
-
-    // update lastTheta for the next frame
+    // interpolate theta towards targetTheta
+    theta = lastTheta + (targetTheta - lastTheta) * 0.005f;
     lastTheta = theta;
 
     float sin_theta = sinf(theta), cos_theta = cosf(theta);
-    float cx = width / 2.0f, cy = height / 2.0f;
+    float cx = width * 0.5f, cy = height * 0.5f;
 
     memset(tempBuffer, 0, width * height * 4); // clear tempBuffer
 
     for (size_t y = 0; y < height; y++) {
         for (size_t x = 0; x < width; x++) {
             float xt = x - cx, yt = y - cy;
-            int src_xi = (int)(cos_theta * xt - sin_theta * yt + cx + 0.5f);
-            int src_yi = (int)(sin_theta * xt + cos_theta * yt + cy + 0.5f);
+            int src_xi = (int)(cos_theta * xt - sin_theta * yt + cx);
+            int src_yi = (int)(sin_theta * xt + cos_theta * yt + cy);
 
             if (src_xi >= 0 && src_xi < (int)width && src_yi >= 0 && src_yi < (int)height) {
                 size_t src_index = (src_yi * width + src_xi) * 4;
@@ -52,16 +48,13 @@ void rotate(float timeFrame, uint8_t *tempBuffer, uint8_t *screen, float speed, 
 
 void scale(
     unsigned char *screen,     // Frame buffer (RGBA format)
+    unsigned char *tempBuffer, // Temporary buffer for scaled image
     float scale,               // Scale factor
     size_t width,              // Frame width
     size_t height              // Frame height
 ) {
-    // Create a temporary buffer to store the scaled image
-    size_t frameSize = width * height * 4;
-    unsigned char *tempBuffer = (unsigned char *)malloc(frameSize);
-    if (!tempBuffer) return;
-
     // Initialize the temporary buffer to transparent black
+    size_t frameSize = width * height * 4;
     memset(tempBuffer, 0, frameSize);
 
     // Calculate center of the frame
@@ -94,7 +87,4 @@ void scale(
 
     // Copy the scaled image back to the original screen buffer
     memcpy(screen, tempBuffer, frameSize);
-
-    // Free the temporary buffer
-    free(tempBuffer);
 }

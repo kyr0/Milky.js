@@ -4,16 +4,16 @@
 #include <stdio.h>
 
 #include "./video/beat.c"
-#include "./video/preset.c"
+#include "./video/bitdepth.c"
+// #include "./video/preset.c"
 #include "./video/transform.c"
 #include "./video/draw.c"
 #include "./video/sound.c"
-#include "./video/warp.c"
 #include "./video/palette.c"
 #include "./video/effects/chaser.c"
-#include "./video/effects/center.c"
+#include "./video/blur.c"
 
-#define RESERVED_MEMORY_SIZE 2560 * 1400 * 4// reserve memory for 8K resolution (max size)
+#define RESERVED_MEMORY_SIZE 2560 * 1400 * 4 // reserve memory
 
 // global cache to store the last frame
 static uint8_t prevFrame[RESERVED_MEMORY_SIZE];
@@ -53,11 +53,11 @@ void render(
         return;
     }
 
-    // parse presets
-    parseFlattenedPresetBuffer(presetsBuffer, MAX_PRESETS * MAX_PROPERTY_COUNT_PER_PRESET);
+    // parse presets; NOT IN USE YET
+    //parseFlattenedPresetBuffer(presetsBuffer, MAX_PRESETS * MAX_PROPERTY_COUNT_PER_PRESET);
 
     // test receiving some value for preset 1
-    float xCenterValue = getPresetPropertyByName(0, "x_center");
+    //float xCenterValue = getPresetPropertyByName(0, "x_center");
     //fprintf(stdout, "x_center value: %f\n", xCenterValue);
 
     float emphasizedWaveform[waveformLength];
@@ -75,26 +75,10 @@ void render(
     } else {
         speedScalar += speed;
 
-        // apply a slight fade to simulate decay and create trails
-        for (size_t i = 0; i < frameSize; i += 4) {
-            uint8_t *pixel = &prevFrame[i];
-            pixel[0] = (uint8_t)(pixel[0] * 0.95); // R
-            pixel[1] = (uint8_t)(pixel[1] * 0.95); // G
-            pixel[2] = (uint8_t)(pixel[2] * 0.95); // B
-        }
-        /*
-        for (size_t i = 0; i < frameSize; i += 4) {
-            for (int channel = 0; channel < 3; channel++) { // Only apply to R, G, B channels
-                uint8_t prevValue = prevFrame[i + channel];
+        blurFrame(prevFrame, frameSize);
+        
+        preserveMassFade(prevFrame, tempBuffer, frameSize);
 
-                // apply a fade by multiplying by 0.95
-                uint8_t fadedValue = (uint8_t)(prevValue * 0.95);
-
-                // preserve more of the original value by averaging with the faded value
-                tempBuffer[i + channel] = (prevValue + fadedValue) / 2;
-            }
-        }*/
-    
         // rotate the previous frame before copying it to the current frame
         //rotate(timeFrame, tempBuffer, prevFrame, 0.2, -8, canvasWidthPx, canvasHeightPx);
 
@@ -106,7 +90,7 @@ void render(
         memcpy(frame, tempBuffer, frameSize);
     }
 
-
+    // colorizes the canvas based on a selected palette
     applyPaletteToCanvas(currentTime, frame, canvasWidthPx, canvasHeightPx);
 
     // render two different versions of the waveform with varying emphasis
@@ -125,12 +109,15 @@ void render(
     rotate(timeFrame, tempBuffer, frame, 0.02 * currentTime, 0.85, canvasWidthPx, canvasHeightPx);
     
     // scale in to hide the edge artifacts
-    scale(frame, 1.35f, canvasWidthPx, canvasHeightPx);
+    scale(frame, tempBuffer, 1.35f, canvasWidthPx, canvasHeightPx);
 
     // reduce bit depth before saving the frame
     if (bitDepth < 32) {
         reduceBitDepth(frame, frameSize, bitDepth);
     }
+
+    // boxBlurAndPerspective(frame, prevFrame , canvasWidthPx, canvasHeightPx);
+    // boxBlurAndPerspective2(frame, prevFrame , canvasWidthPx, canvasHeightPx);
 
     // update the cache with the new frame data, limited to RESERVED_MEMORY_SIZE
     memcpy(prevFrame, frame, frameSize);
