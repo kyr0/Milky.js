@@ -1,9 +1,6 @@
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <wasm_simd128.h>
+#include "blur.h"
 
+/*
 // not in use yet
 void boxBlurAndPerspective(
     uint8_t *frame, 
@@ -121,7 +118,18 @@ void boxBlurAndPerspective2(
       }
   }
 }
+*/
 
+/**
+ * Iterates over each pixel in the given frame and applies a fade effect
+ * to the red, green, and blue channels. The fade effect is achieved by multiplying each
+ * channel value by 0.90, which slightly reduces the intensity of the colors. This results
+ * in a smoother transition between frames, helping to create a more visually appealing
+ * blur effect. The alpha channel is not modified to maintain the transparency level.
+ *
+ * @param prevFrame A pointer to the frame buffer containing pixel data in RGBA format.
+ * @param frameSize The total size of the frame buffer in bytes.
+ */
 void blurFrame(uint8_t *prevFrame, size_t frameSize) {
    for (size_t i = 0; i < frameSize; i += 4) {
       uint8_t *pixel = &prevFrame[i];

@@ -1,11 +1,13 @@
-#include <stdint.h>
-#include <string.h>
-#include <math.h>
-#include <stddef.h>
-#include <stdlib.h>
+#include "sound.h"
 
 // Global variable to store the average offset introduced by smoothing
-static float averageOffset = 0.0f;
+float averageOffset = 0.0f;
+
+// Cache for the last rendered waveform
+float cachedWaveform[2048]; // Assuming a fixed size for simplicity
+
+// static variable to keep track of frame count
+int frameCounter = 0;
 
 void smoothBassEmphasizedWaveform(
     const uint8_t *waveform, 
@@ -26,12 +28,6 @@ void smoothBassEmphasizedWaveform(
 }
 
 void setPixel(uint8_t *frame, size_t width, size_t x, size_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-
-// Cache for the last rendered waveform
-static float cachedWaveform[2048]; // Assuming a fixed size for simplicity
-
-// static variable to keep track of frame count
-static int frameCounter = 0;
 
 void renderWaveformSimple(
     float timeFrame,

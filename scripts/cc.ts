@@ -36,7 +36,7 @@ const compileCCode = () => {
     '-s',
     `EXPORTED_FUNCTIONS=["_render", "_malloc", "_free"]`,
     '-msimd128',
-    '-O2',
+    '-O3',
     '-o',
     'src/lib/.gen/video.mjs',
     '--minify',

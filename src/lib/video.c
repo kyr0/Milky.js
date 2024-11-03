@@ -1,131 +1,164 @@
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdio.h>
+#include "video.h"
 
-// #include "./preset.c"
-
-#include "./audio/sound.c"
-#include "./audio/energy.c"
-
-#include "./video/bitdepth.c"
-#include "./video/transform.c"
-#include "./video/draw.c"
-#include "./video/palette.c"
-#include "./video/effects/chaser.c"
-#include "./video/blur.c"
-
-#define RESERVED_MEMORY_SIZE 2560 * 1400 * 4 // reserve memory
-
-// global cache to store the last frame
-static uint8_t prevFrame[RESERVED_MEMORY_SIZE];
-
-// flag to check if lastFrame is initialized
-static int isLastFrameInitialized = 0;
-
-// global variable to store the previous time
-size_t prevTime = 0;
-static float speedScalar = 0.01f;
-
+/**
+ * Renders one visual frame based on audio waveform and spectrum data.
+ *
+ * @param frame           Canvas frame buffer (RGBA format).
+ * @param canvasWidthPx   Canvas width in pixels.
+ * @param canvasHeightPx  Canvas height in pixels.
+ * @param waveform        Waveform data array, 8-bit unsigned integers, 576 samples.
+ * @param spectrum        Spectrum data array.
+ * @param waveformLength  Length of the waveform data array.
+ * @param spectrumLength  Length of the spectrum data array.
+ * @param bitDepth        Bit depth of the rendering.
+ * @param presetsBuffer   Preset data.
+ * @param speed           Speed factor for the rendering.
+ * @param currentTime     Current time in milliseconds.
+ */
 void render(
-    uint8_t *frame,                 // Canvas frame buffer (RGBA format)
-    size_t canvasWidthPx,           // Canvas width in pixels
-    size_t canvasHeightPx,          // Canvas height in pixels
-    const uint8_t *waveform,        // Waveform data array, 8-bit unsigned integers, 576 samples
-    const uint8_t *spectrum,        // Spectrum data array
-    size_t waveformLength,          // Length of the waveform data array
-    size_t spectrumLength,          // Length of the spectrum data array
-    uint8_t bitDepth,               // Bit depth of the rendering
-    float *presetsBuffer,           // Preset data
-    float speed,                    // Speed factor for the rendering
-    size_t currentTime              // Current time in milliseconds
+    uint8_t *frame,
+    size_t canvasWidthPx,
+    size_t canvasHeightPx,
+    const uint8_t *waveform,
+    const uint8_t *spectrum,
+    size_t waveformLength,
+    size_t spectrumLength,
+    uint8_t bitDepth,
+    float *presetsBuffer,
+    float speed,
+    size_t currentTime
 ) {
-    size_t frameSize = canvasWidthPx * canvasHeightPx * 4; // Each pixel has 4 components (RGBA)
+    // calculate the size of the frame buffer based on canvas dimensions and RGBA format
+    size_t frameSize = canvasWidthPx * canvasHeightPx * 4;
 
-    // ensure frameSize does not exceed reserved memory
-    if (frameSize > RESERVED_MEMORY_SIZE) {
-        fprintf(stderr, "Frame size exceeds reserved memory size\n");
-        return;
+    // initialize previous frame size if not set
+    if (prevFrameSize == 0) {
+        prevFrameSize = frameSize;
     }
 
-    // allocate a temporary buffer for local use
-    uint8_t *tempBuffer = (uint8_t *)malloc(frameSize);
-    if (!tempBuffer) {
-        fprintf(stderr, "Failed to allocate temporary buffer\n");
-        return;
-    }
+    // ensure memory is allocated and updated for the current canvas size
+    reserveAndUpdateMemory(canvasWidthPx, canvasHeightPx, frame, frameSize);
 
-    // parse presets; NOT IN USE YET
-    //parseFlattenedPresetBuffer(presetsBuffer, MAX_PRESETS * MAX_PROPERTY_COUNT_PER_PRESET);
-
-    // test receiving some value for preset 1
-    //float xCenterValue = getPresetPropertyByName(0, "x_center");
-    //fprintf(stdout, "x_center value: %f\n", xCenterValue);
-
+    // create an array to store the emphasized waveform
     float emphasizedWaveform[waveformLength];
+
+    // apply smoothing and bass emphasis to the waveform
     smoothBassEmphasizedWaveform(waveform, waveformLength, emphasizedWaveform, canvasWidthPx, 0.7f);
 
-    // calculate timeFrame based on the difference between currentTime and prevTime
+    // calculate the time frame for rendering based on the elapsed time
     float timeFrame = ((prevTime == 0) ? 0.01f : (currentTime - prevTime) / 1000.0f);
 
-    // check if lastFrame is initialized using a separate flag
+    // check if the last frame is initialized; if not, clear the frames
     if (!isLastFrameInitialized) {
         clearFrame(frame, frameSize);
-        clearFrame(prevFrame, RESERVED_MEMORY_SIZE);
+        clearFrame(prevFrame, prevFrameSize);
         isLastFrameInitialized = 1; 
-
     } else {
+        // update speed scalar with the current speed
         speedScalar += speed;
 
+        // apply blur effect to the previous frame
         blurFrame(prevFrame, frameSize);
         
+        // preserve mass fade effect on the temporary buffer
         preserveMassFade(prevFrame, tempBuffer, frameSize);
 
-        // rotate the previous frame before copying it to the current frame
-        //rotate(timeFrame, tempBuffer, prevFrame, 0.2, -8, canvasWidthPx, canvasHeightPx);
-
-        // scale the rotated frame to fit the canvas (zoom in)
-        //scale(prevFrame, 1.002f, canvasWidthPx, canvasHeightPx);
-        
-        // copy last frame's data to canvas buffer as a base to overdraw
+        // copy the previous frame to the current frame as a base for drawing
         memcpy(tempBuffer, prevFrame, frameSize);
         memcpy(frame, tempBuffer, frameSize);
     }
 
-    // colorizes the canvas based on a selected palette
+    // apply color palette to the canvas based on the current time
     applyPaletteToCanvas(currentTime, frame, canvasWidthPx, canvasHeightPx);
 
-    // render two different versions of the waveform with varying emphasis
+    // render the waveform on the canvas with different emphasis levels
     renderWaveformSimple(timeFrame, frame, canvasWidthPx, canvasHeightPx, emphasizedWaveform, waveformLength, 0.85f, 2, 1);
     renderWaveformSimple(timeFrame, frame, canvasWidthPx, canvasHeightPx, emphasizedWaveform, waveformLength, 0.95f, 1, 1);
     renderWaveformSimple(timeFrame, frame, canvasWidthPx, canvasHeightPx, emphasizedWaveform, waveformLength, 5.0f, 0, 1);
     renderWaveformSimple(timeFrame, frame, canvasWidthPx, canvasHeightPx, emphasizedWaveform, waveformLength, 0.95f, -1, 1);
 
-    // spectral audio energy spike detection
+    // detect energy spikes in the audio data
     detectEnergySpike(waveform, spectrum, waveformLength, spectrumLength, 44100);
 
-    // chasers effect rendering
+    // render chasers effect on the frame
     renderChasers(speedScalar, frame, speed * 20, 2, canvasWidthPx, canvasHeightPx, 42, 2);
 
-    // rotate the previous frame before copying it to the current frame
+    // rotate the frame to create a dynamic visual effect
     rotate(timeFrame, tempBuffer, frame, 0.02 * currentTime, 0.85, canvasWidthPx, canvasHeightPx);
     
-    // scale in to hide the edge artifacts
+    // scale the frame to hide edge artifacts
     scale(frame, tempBuffer, 1.35f, canvasWidthPx, canvasHeightPx);
 
-    // reduce bit depth before saving the frame
+    // reduce the bit depth of the frame if necessary
     if (bitDepth < 32) {
         reduceBitDepth(frame, frameSize, bitDepth);
     }
 
-    // boxBlurAndPerspective(frame, prevFrame , canvasWidthPx, canvasHeightPx);
-    // boxBlurAndPerspective2(frame, prevFrame , canvasWidthPx, canvasHeightPx);
-
-    // update the cache with the new frame data, limited to RESERVED_MEMORY_SIZE
+    // update the previous frame with the current frame data
     memcpy(prevFrame, frame, frameSize);
 
-    // free the temporary buffer
-    free(tempBuffer);
+    // update the previous time and frame size for the next rendering cycle
+    prevTime = currentTime;
+    prevFrameSize = frameSize;
+}
 
-    prevTime = currentTime; // update prevTime for the next frame
+/**
+ * Reserves and updates memory dynamically for rendering based on canvas size.
+ *
+ * @param canvasWidthPx  Canvas width in pixels.
+ * @param canvasHeightPx Canvas height in pixels.
+ * @param frame          Frame buffer to be updated.
+ * @param frameSize      Size of the frame buffer.
+ */
+void reserveAndUpdateMemory(size_t canvasWidthPx, size_t canvasHeightPx, uint8_t *frame, size_t frameSize) {
+    // check if the canvas size has changed and reinitialize buffers if necessary
+    if (canvasWidthPx != lastCanvasWidthPx || canvasHeightPx != lastCanvasHeightPx) {
+        clearFrame(frame, frameSize);
+        if (prevFrame) {
+            free(prevFrame);
+        }
+        prevFrame = (uint8_t *)malloc(frameSize);
+        if (!prevFrame) {
+            fprintf(stderr, "Failed to allocate prevFrame buffer\n");
+            return;
+        }
+        lastCanvasWidthPx = canvasWidthPx;
+        lastCanvasHeightPx = canvasHeightPx;
+
+        // free and reallocate the temporary buffer if canvas size changes
+        if (tempBuffer) {
+            free(tempBuffer);
+        }
+        tempBuffer = (uint8_t *)malloc(frameSize);
+        if (!tempBuffer) {
+            fprintf(stderr, "Failed to allocate temporary buffer\n");
+            return;
+        }
+        tempBufferSize = frameSize;
+    }
+
+    // allocate or reuse the prevFrame buffer
+    if (!prevFrame || tempBufferSize < frameSize) {
+        if (prevFrame) {
+            free(prevFrame);
+        }
+        prevFrame = (uint8_t *)malloc(frameSize);
+        if (!prevFrame) {
+            fprintf(stderr, "Failed to allocate prevFrame buffer\n");
+            return;
+        }
+    }
+
+    // allocate or reuse the temporary buffer
+    if (!tempBuffer || tempBufferSize < frameSize) {
+        if (tempBuffer) {
+            free(tempBuffer);
+        }
+        tempBuffer = (uint8_t *)malloc(frameSize);
+        if (!tempBuffer) {
+            fprintf(stderr, "Failed to allocate temporary buffer\n");
+            return;
+        }
+        tempBufferSize = frameSize;
+    }
 }
