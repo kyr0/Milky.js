@@ -44,7 +44,8 @@ void render(
     uint8_t bitDepth,               // Bit depth of the rendering
     float *presetsBuffer,           // Preset data
     float speed,                    // Speed factor for the rendering
-    size_t currentTime              // Current time in milliseconds
+    size_t currentTime,             // Current time in milliseconds,
+    size_t sampleRate               // Waveform sample rate (samples per second)
 );
 
 void reserveAndUpdateMemory(size_t canvasWidthPx, size_t canvasHeightPx,  uint8_t *frame, size_t frameSize);

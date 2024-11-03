@@ -143,7 +143,7 @@ async function setupStartButton(startButtonEl: HTMLButtonElement) {
       let frameCount = 0;
 
       // audio source has been selected, start capturing the audio stream
-      const listenerId = await captureAndAnalyzeAudioStream(deviceId, (waveform, spectrum, _audioCaptureListenerId) => {
+      const listenerId = await captureAndAnalyzeAudioStream(deviceId, (waveform, spectrum, sampleRate, _audioCaptureListenerId) => {
 
         // --- RENDER LOOP
         //console.log('audioCaptureListenerId:', audioCaptureListenerId);
@@ -163,7 +163,7 @@ async function setupStartButton(startButtonEl: HTMLButtonElement) {
           Geiss.get().renderHeight || geissDefaults.renderHeight,
           Geiss.get().bitDepth || geissDefaults.bitDepth,
           currentPresetEncoded,
-          0
+          sampleRate,
         );
 
         // calculate FPS after rendering

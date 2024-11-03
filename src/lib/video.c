@@ -14,6 +14,7 @@
  * @param presetsBuffer   Preset data.
  * @param speed           Speed factor for the rendering.
  * @param currentTime     Current time in milliseconds.
+ * @param sampleRate      Waveform sample rate (samples per second)
  */
 void render(
     uint8_t *frame,
@@ -26,7 +27,8 @@ void render(
     uint8_t bitDepth,
     float *presetsBuffer,
     float speed,
-    size_t currentTime
+    size_t currentTime,
+    size_t sampleRate
 ) {
     // calculate the size of the frame buffer based on canvas dimensions and RGBA format
     size_t frameSize = canvasWidthPx * canvasHeightPx * 4;
@@ -78,7 +80,7 @@ void render(
     renderWaveformSimple(timeFrame, frame, canvasWidthPx, canvasHeightPx, emphasizedWaveform, waveformLength, 0.95f, -1, 1);
 
     // detect energy spikes in the audio data
-    detectEnergySpike(waveform, spectrum, waveformLength, spectrumLength, 44100);
+    detectEnergySpike(waveform, spectrum, waveformLength, spectrumLength, sampleRate);
 
     // render chasers effect on the frame
     renderChasers(speedScalar, frame, speed * 20, 2, canvasWidthPx, canvasHeightPx, 42, 2);

@@ -37,6 +37,7 @@ export interface WasmModule {
     ptrPresetsBuffer: number,
     speed: number,
     currentTimestamp: number,
+    sampleRate: number,
   ) => void;
   HEAPU8: {
     set: (data: Uint8Array, offset: number) => void;
@@ -75,18 +76,8 @@ export const renderFrame = (
   heightPx: number,
   bitDepth: number,
   presets: Float32Array,
-  _fps: number,
+  sampleRate: number,
 ): void => {
-  /*
-  const maxFps = 20;
-  const frameInterval = Math.floor(fps / maxFps);
-
-  // Return early if the current frame should be skipped
-  if (frameInterval > 1 && Math.floor(performance.now() / (1000 / maxFps)) % frameInterval !== 0) {
-    return;
-  }
-    */
-
   const frameSize = widthPx * heightPx * 4;
 
   // Reallocate if dimensions changed
@@ -114,6 +105,7 @@ export const renderFrame = (
     ptrPresets,
     0.03,
     performance.now(),
+    sampleRate,
   );
 
   // Draw to canvas

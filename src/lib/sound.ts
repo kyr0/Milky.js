@@ -7,7 +7,7 @@ export let audioStreamNode: MediaStreamAudioSourceNode | null = null;
 export let fftAnalyzer: AnalyserNode | null = null;
 let audioStreamCaptureListenerId = 0;
 
-export type OnAudioFrameCallbackFn = (waveform: Uint8Array, spectrum: Uint8Array, audioCaptureListenerId: number) => void;
+export type OnAudioFrameCallbackFn = (waveform: Uint8Array, spectrum: Uint8Array, sampleRate: number, audioCaptureListenerId: number) => void;
 
 export interface AudioCaptureOptions {
   fftSize: number;
@@ -132,7 +132,7 @@ export async function captureAndAnalyzeAudioStream(
     audioMerger = getAudioContext().createChannelMerger(1); // downmix all channels into a single channel (mono)
 
     audioStreamNode.connect(audioMerger);
-    
+
     await analyzeAudioStream(audioMerger, spectrumData, waveformData, options, audioCaptureListenerId, onFrame);
 
     return audioStreamCaptureListenerId;
@@ -233,7 +233,7 @@ export async function analyzeAudioStream(
     if (now - lastDrawTime >= options.delayMs) {
       // ensure the listener is still valid before calling onFrame
       if (audioCaptureListenerId === audioStreamCaptureListenerId) {
-        onFrame(timeDomainWaveformData, frequencySpectrumData, audioCaptureListenerId);
+        onFrame(timeDomainWaveformData, frequencySpectrumData, getAudioContext().sampleRate, audioCaptureListenerId);
         lastDrawTime = now; // update last draw time
       }
     }
