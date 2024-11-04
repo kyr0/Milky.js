@@ -1,5 +1,9 @@
 #include "transform.h"
 
+// global variable to store the last theta value
+static float milky_transformLastTheta = 0.0f;
+static float milky_transformTargetTheta = 0.0f;
+
 /**
  * Rotates the given frame buffer by a calculated angle and blends the result back into the frame.
  * Therefore, applies a smooth rotation transformation to the frame buffer using a temporary buffer.
@@ -21,14 +25,14 @@ void rotate(float timeFrame, uint8_t *tempBuffer, uint8_t *frame, float speed, f
 
     // if the difference between lastTheta and targetTheta is small, update targetTheta
     // this ensures that the rotation direction changes smoothly and randomly
-    if (fabs(lastTheta - targetTheta) < 0.01f) {
+    if (fabs(milky_transformLastTheta - milky_transformTargetTheta) < 0.01f) {
         // set a new targetTheta randomly between -45 and 45 degrees
-        targetTheta = (rand() % 90 - 45) * (M_PI / 180.0f);
+        milky_transformTargetTheta = (rand() % 90 - 45) * (M_PI / 180.0f);
     }
 
     // interpolate theta towards targetTheta for smooth transition
-    theta = lastTheta + (targetTheta - lastTheta) * 0.005f;
-    lastTheta = theta; // update lastTheta for the next frame
+    theta = milky_transformLastTheta + (milky_transformTargetTheta - milky_transformLastTheta) * 0.005f;
+    milky_transformLastTheta = theta; // update lastTheta for the next frame
 
     // precompute sine and cosine of the current theta for rotation
     float sin_theta = sinf(theta), cos_theta = cosf(theta);

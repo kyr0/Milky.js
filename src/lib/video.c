@@ -1,5 +1,35 @@
 #include "video.h"
 
+// config/state
+// #include "./preset.c"
+
+// audio
+#include "./audio/sound.c"
+#include "./audio/energy.c"
+
+// video
+#include "./video/bitdepth.c"
+#include "./video/transform.c"
+#include "./video/draw.c"
+#include "./video/palette.c"
+#include "./video/effects/chaser.c"
+#include "./video/blur.c"
+
+// flag to check if lastFrame is initialized
+static int milky_videoIsLastFrameInitialized = 0;
+
+// global variable to store the previous time
+static size_t milky_videoPrevTime = 0;
+static size_t milky_videoPrevFrameSize = 0;
+static float milky_videoSpeedScalar = 0.01f;
+
+// static buffer to be reused across render calls
+static uint8_t *milky_videoTempBuffer = NULL;
+static uint8_t *milky_videoPrevFrame = NULL;
+static size_t milky_videoTempBufferSize = 0;
+static size_t milky_videoLastCanvasWidthPx = 0;
+static size_t milky_videoLastCanvasHeightPx = 0;
+
 /**
  * Renders one visual frame based on audio waveform and spectrum data.
  *
@@ -34,8 +64,8 @@ void render(
     size_t frameSize = canvasWidthPx * canvasHeightPx * 4;
 
     // initialize previous frame size if not set
-    if (prevFrameSize == 0) {
-        prevFrameSize = frameSize;
+    if (milky_videoPrevFrameSize == 0) {
+        milky_videoPrevFrameSize = frameSize;
     }
 
     // ensure memory is allocated and updated for the current canvas size
@@ -48,26 +78,26 @@ void render(
     smoothBassEmphasizedWaveform(waveform, waveformLength, emphasizedWaveform, canvasWidthPx, 0.7f);
 
     // calculate the time frame for rendering based on the elapsed time
-    float timeFrame = ((prevTime == 0) ? 0.01f : (currentTime - prevTime) / 1000.0f);
+    float timeFrame = ((milky_videoPrevTime == 0) ? 0.01f : (currentTime - milky_videoPrevTime) / 1000.0f);
 
     // check if the last frame is initialized; if not, clear the frames
-    if (!isLastFrameInitialized) {
+    if (!milky_videoIsLastFrameInitialized) {
         clearFrame(frame, frameSize);
-        clearFrame(prevFrame, prevFrameSize);
-        isLastFrameInitialized = 1; 
+        clearFrame(milky_videoPrevFrame, milky_videoPrevFrameSize);
+        milky_videoIsLastFrameInitialized = 1;
     } else {
         // update speed scalar with the current speed
-        speedScalar += speed;
+        milky_videoSpeedScalar += speed;
 
         // apply blur effect to the previous frame
-        blurFrame(prevFrame, frameSize);
+        blurFrame(milky_videoPrevFrame, frameSize);
         
         // preserve mass fade effect on the temporary buffer
-        preserveMassFade(prevFrame, tempBuffer, frameSize);
+        preserveMassFade(milky_videoPrevFrame, milky_videoTempBuffer, frameSize);
 
         // copy the previous frame to the current frame as a base for drawing
-        memcpy(tempBuffer, prevFrame, frameSize);
-        memcpy(frame, tempBuffer, frameSize);
+        memcpy(milky_videoTempBuffer, milky_videoPrevFrame, frameSize);
+        memcpy(frame, milky_videoTempBuffer, frameSize);
     }
 
     // apply color palette to the canvas based on the current time
@@ -83,13 +113,13 @@ void render(
     detectEnergySpike(waveform, spectrum, waveformLength, spectrumLength, sampleRate);
 
     // render chasers effect on the frame
-    renderChasers(speedScalar, frame, speed * 20, 2, canvasWidthPx, canvasHeightPx, 42, 2);
+    renderChasers(milky_videoSpeedScalar, frame, speed * 20, 2, canvasWidthPx, canvasHeightPx, 42, 2);
 
     // rotate the frame to create a dynamic visual effect
-    rotate(timeFrame, tempBuffer, frame, 0.02 * currentTime, 0.85, canvasWidthPx, canvasHeightPx);
+    rotate(timeFrame, milky_videoTempBuffer, frame, 0.02 * currentTime, 0.85, canvasWidthPx, canvasHeightPx);
     
     // scale the frame to hide edge artifacts
-    scale(frame, tempBuffer, 1.35f, canvasWidthPx, canvasHeightPx);
+    scale(frame, milky_videoTempBuffer, 1.35f, canvasWidthPx, canvasHeightPx);
 
     // reduce the bit depth of the frame if necessary
     if (bitDepth < 32) {
@@ -97,11 +127,11 @@ void render(
     }
 
     // update the previous frame with the current frame data
-    memcpy(prevFrame, frame, frameSize);
+    memcpy(milky_videoPrevFrame, frame, frameSize);
 
     // update the previous time and frame size for the next rendering cycle
-    prevTime = currentTime;
-    prevFrameSize = frameSize;
+    milky_videoPrevTime = currentTime;
+    milky_videoPrevFrameSize = frameSize;
 }
 
 /**
@@ -114,53 +144,53 @@ void render(
  */
 void reserveAndUpdateMemory(size_t canvasWidthPx, size_t canvasHeightPx, uint8_t *frame, size_t frameSize) {
     // check if the canvas size has changed and reinitialize buffers if necessary
-    if (canvasWidthPx != lastCanvasWidthPx || canvasHeightPx != lastCanvasHeightPx) {
+    if (canvasWidthPx != milky_videoLastCanvasWidthPx || canvasHeightPx != milky_videoLastCanvasHeightPx) {
         clearFrame(frame, frameSize);
-        if (prevFrame) {
-            free(prevFrame);
+        if (milky_videoPrevFrame) {
+            free(milky_videoPrevFrame);
         }
-        prevFrame = (uint8_t *)malloc(frameSize);
-        if (!prevFrame) {
+        milky_videoPrevFrame = (uint8_t *)malloc(frameSize);
+        if (!milky_videoPrevFrame) {
             fprintf(stderr, "Failed to allocate prevFrame buffer\n");
             return;
         }
-        lastCanvasWidthPx = canvasWidthPx;
-        lastCanvasHeightPx = canvasHeightPx;
+        milky_videoLastCanvasWidthPx = canvasWidthPx;
+        milky_videoLastCanvasHeightPx = canvasHeightPx;
 
         // free and reallocate the temporary buffer if canvas size changes
-        if (tempBuffer) {
-            free(tempBuffer);
+        if (milky_videoTempBuffer) {
+            free(milky_videoTempBuffer);
         }
-        tempBuffer = (uint8_t *)malloc(frameSize);
-        if (!tempBuffer) {
+        milky_videoTempBuffer = (uint8_t *)malloc(frameSize);
+        if (!milky_videoTempBuffer) {
             fprintf(stderr, "Failed to allocate temporary buffer\n");
             return;
         }
-        tempBufferSize = frameSize;
+        milky_videoTempBufferSize = frameSize;
     }
 
     // allocate or reuse the prevFrame buffer
-    if (!prevFrame || tempBufferSize < frameSize) {
-        if (prevFrame) {
-            free(prevFrame);
+    if (!milky_videoPrevFrame || milky_videoTempBufferSize < frameSize) {
+        if (milky_videoPrevFrame) {
+            free(milky_videoPrevFrame);
         }
-        prevFrame = (uint8_t *)malloc(frameSize);
-        if (!prevFrame) {
+        milky_videoPrevFrame = (uint8_t *)malloc(frameSize);
+        if (!milky_videoPrevFrame) {
             fprintf(stderr, "Failed to allocate prevFrame buffer\n");
             return;
         }
     }
 
     // allocate or reuse the temporary buffer
-    if (!tempBuffer || tempBufferSize < frameSize) {
-        if (tempBuffer) {
-            free(tempBuffer);
+    if (!milky_videoTempBuffer || milky_videoTempBufferSize < frameSize) {
+        if (milky_videoTempBuffer) {
+            free(milky_videoTempBuffer);
         }
-        tempBuffer = (uint8_t *)malloc(frameSize);
-        if (!tempBuffer) {
+        milky_videoTempBuffer = (uint8_t *)malloc(frameSize);
+        if (!milky_videoTempBuffer) {
             fprintf(stderr, "Failed to allocate temporary buffer\n");
             return;
         }
-        tempBufferSize = frameSize;
+        milky_videoTempBufferSize = frameSize;
     }
 }

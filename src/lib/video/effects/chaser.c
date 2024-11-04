@@ -1,5 +1,26 @@
 #include "chaser.h"
 
+// structure to represent a chaser, which is a moving point on the screen
+typedef struct {
+    float coeff1; // coefficient for x-axis movement calculation
+    float coeff2; // coefficient for x-axis movement calculation
+    float coeff3; // coefficient for y-axis movement calculation
+    float coeff4; // coefficient for y-axis movement calculation
+    float pathLengthX; // length of the path on the x-axis
+    float pathLengthY; // length of the path on the y-axis
+    int prevX; // previous x-coordinate of the chaser
+    int prevY; // previous y-coordinate of the chaser
+} Chaser;
+
+// array to store the chasers (precomputed coefficients, path lenghts, position cache), limited to MAX_CHASERS
+static Chaser chasers[MILKY_MAX_CHASERS];
+
+// variables to track the last known canvas dimensions
+// used to determine if the chasers need reinitialization
+// this is necessary on sudden canvas size changes
+static size_t lastWidth = 0;
+static size_t lastHeight = 0;
+
 /**
  Renders a set of "chasers" on a screen buffer. 
 
@@ -43,13 +64,13 @@ void renderChasers(float timeFrame, uint8_t *screen, float speed, unsigned int c
 
         // draw line from previous position to new position with specified thickness
         for (int offset = -thickness / 2; offset <= thickness / 2; offset++) {
-            drawLine(screen, width, height, chaser->prevX, chaser->prevY + offset, x1, y1 + offset, CHASER_INTENSITY, CHASER_INTENSITY, CHASER_INTENSITY, 255);
+            drawLine(screen, width, height, chaser->prevX, chaser->prevY + offset, x1, y1 + offset, MILKY_CHASER_INTENSITY, MILKY_CHASER_INTENSITY, MILKY_CHASER_INTENSITY, 255);
 
             // add antialiasing effect at the edges
             if (offset == -thickness / 2 || offset == thickness / 2) {
                 // apply a lighter intensity for antialiasing
-                drawLine(screen, width, height, chaser->prevX, chaser->prevY + offset - 1, x1, y1 + offset - 1, CHASER_INTENSITY, CHASER_INTENSITY, CHASER_INTENSITY, 127);
-                drawLine(screen, width, height, chaser->prevX, chaser->prevY + offset + 1, x1, y1 + offset + 1, CHASER_INTENSITY, CHASER_INTENSITY, CHASER_INTENSITY, 127);
+                drawLine(screen, width, height, chaser->prevX, chaser->prevY + offset - 1, x1, y1 + offset - 1, MILKY_CHASER_INTENSITY, MILKY_CHASER_INTENSITY, MILKY_CHASER_INTENSITY, 127);
+                drawLine(screen, width, height, chaser->prevX, chaser->prevY + offset + 1, x1, y1 + offset + 1, MILKY_CHASER_INTENSITY, MILKY_CHASER_INTENSITY, MILKY_CHASER_INTENSITY, 127);
             }
         }
 
@@ -87,7 +108,7 @@ void initializeChasers(unsigned int count, size_t width, size_t height, unsigned
         chasers[k].pathLengthY = ((float)(rand() % 61 + 20)) * 0.01f * height / 4; // 20% to 80% of height
 
         // initialize previous positions at the center
-        chasers[k].prevX = width / 2;
-        chasers[k].prevY = height / 2;
+        chasers[k].prevX = (int) width / 2;
+        chasers[k].prevY = (int) height / 2;
     }
 }

@@ -1,5 +1,17 @@
 #include "energy.h"
 
+int milky_energyEnergySpikeDetected = 0;
+
+// State preservation across function calls
+static float milky_energyAvgEnergy = 0.0f;
+static float milky_energyAvgFlux = 0.0f;
+static int milky_energyDetectionCooldownCounter = MILKY_COOLDOWN_PERIOD; // Counter for cooldown period
+static float milky_energyPreviousSpectrum[MILKY_MAX_SPECTRUM_LENGTH] = {0};
+static float milky_energyWeights[MILKY_MAX_SPECTRUM_LENGTH] = {0};
+static size_t milky_energyMaxBin = 0;
+static float milky_energyFrequencyBinWidth = 0.0f;
+static int milky_energyEnergySpikeDetectionInitialized = 0;
+
 /**
  * Initializes a low-pass biquad filter with a strong Q factor for sharp cutoff at 500 Hz.
  * 
@@ -10,7 +22,7 @@
  */
 void initLowPassFilter(BiquadFilter *filter, float cutoffFreq, float sampleRate, float Q) {
     // calculate the angular frequency
-    float omega = 2.0f * PI * cutoffFreq / sampleRate;
+    float omega = 2.0f * MILKY_PI * cutoffFreq / sampleRate;
     // calculate the filter's alpha value, which determines the bandwidth
     float alpha = sinf(omega) / (2.0f * Q);
     // calculate the cosine of the angular frequency
@@ -95,29 +107,29 @@ void detectEnergySpike(
 
     // initialize detection parameters and filter if not already done
     static BiquadFilter lpFilter;
-    if (!energySpikeDetectionInitialized) {
+    if (!milky_energyEnergySpikeDetectionInitialized) {
         // calculate the frequency bin width for the spectrum
-        frequency_bin_width = sampleRate / (2.0f * spectrumLength);
+        milky_energyFrequencyBinWidth = sampleRate / (2.0f * spectrumLength);
         
         // initialize low-pass filter for 500 Hz cutoff
-        initLowPassFilter(&lpFilter, CUTOFF_FREQUENCY_HZ, sampleRate, 1.0f); // Q factor of 1.0 for strong cutoff
+        initLowPassFilter(&lpFilter, MILKY_CUTOFF_FREQUENCY_HZ, sampleRate, 1.0f); // Q factor of 1.0 for strong cutoff
 
         // determine the low-frequency maximum bin (under 500 Hz)
-        max_bin = (size_t)(CUTOFF_FREQUENCY_HZ / frequency_bin_width);
-        if (max_bin > spectrumLength) max_bin = spectrumLength;
-        if (max_bin > MAX_SPECTRUM_LENGTH) max_bin = MAX_SPECTRUM_LENGTH;
+        milky_energyMaxBin = (size_t)(MILKY_CUTOFF_FREQUENCY_HZ / milky_energyFrequencyBinWidth);
+        if (milky_energyMaxBin > spectrumLength) milky_energyMaxBin = spectrumLength;
+        if (milky_energyMaxBin > MILKY_MAX_SPECTRUM_LENGTH) milky_energyMaxBin = MILKY_MAX_SPECTRUM_LENGTH;
 
         // emphasize low frequencies in weights
-        for (size_t i = 0; i < max_bin; i++) {
-            float frequency = (i + 1) * frequency_bin_width;
-            weights[i] = 1.0f / (frequency + 1e-6f); // avoid division by zero
+        for (size_t i = 0; i < milky_energyMaxBin; i++) {
+            float frequency = (i + 1) * milky_energyFrequencyBinWidth;
+            milky_energyWeights[i] = 1.0f / (frequency + 1e-6f); // avoid division by zero
         }
-        energySpikeDetectionInitialized = 1;
+        milky_energyEnergySpikeDetectionInitialized = 1;
     }
 
     // apply low-pass filter to the waveform
-    float filtered_waveform[MAX_WAVEFORM_LENGTH];
-    size_t length = (waveformLength < MAX_WAVEFORM_LENGTH) ? waveformLength : MAX_WAVEFORM_LENGTH;
+    float filtered_waveform[MILKY_MAX_WAVEFORM_LENGTH];
+    size_t length = (waveformLength < MILKY_MAX_WAVEFORM_LENGTH) ? waveformLength : MILKY_MAX_WAVEFORM_LENGTH;
     for (size_t i = 0; i < length; i++) {
         // center the waveform data and apply the filter
         filtered_waveform[i] = processSample(&lpFilter, (float)emphasizedWaveform[i] - 128.0f);
@@ -134,56 +146,56 @@ void detectEnergySpike(
     float current_energy = sqrtf(filtered_energy / length);
     
     // apply a noise gate: skip detection if the signal is below the noise threshold
-    if (current_energy < NOISE_GATE_THRESHOLD) {
-        energySpikeDetected = 0;
+    if (current_energy < MILKY_NOISE_GATE_THRESHOLD) {
+        milky_energyEnergySpikeDetected = 0;
         return; // exit early for low-amplitude sections
     }
 
     // update average energy using exponential moving average
-    avg_energy = avg_energy * energy_alpha + current_energy * (1.0f - energy_alpha);
+    milky_energyAvgEnergy = milky_energyAvgEnergy * energy_alpha + current_energy * (1.0f - energy_alpha);
     // calculate energy ratio for detection
-    float energy_ratio = current_energy / (avg_energy + 1e-6f);
+    float energy_ratio = current_energy / (milky_energyAvgEnergy + 1e-6f);
 
     // calculate spectral flux with adaptive frequency emphasis
     float spectral_flux = 0.0f;
     float sum_weights = 0.0f;
-    size_t bins = (spectrumLength < MAX_SPECTRUM_LENGTH) ? spectrumLength : MAX_SPECTRUM_LENGTH;
+    size_t bins = (spectrumLength < MILKY_MAX_SPECTRUM_LENGTH) ? spectrumLength : MILKY_MAX_SPECTRUM_LENGTH;
 
     for (size_t i = 0; i < bins; i++) {
         // calculate the difference in spectrum values
-        float diff = (float)spectrum[i] - previous_spectrum[i];
+        float diff = (float)spectrum[i] - milky_energyPreviousSpectrum[i];
         // update previous spectrum for the next iteration
-        previous_spectrum[i] = (float)spectrum[i];
+        milky_energyPreviousSpectrum[i] = (float)spectrum[i];
 
         if (diff > 0) {
             // accumulate positive flux weighted by frequency emphasis
-            spectral_flux += diff * weights[i];
+            spectral_flux += diff * milky_energyWeights[i];
         }
         // accumulate weights for normalization
-        sum_weights += weights[i];
+        sum_weights += milky_energyWeights[i];
     }
 
     // normalize spectral flux if weights are non-zero
     if (sum_weights > 0.0f) spectral_flux /= sum_weights;
     // update flux average using exponential moving average
-    avg_flux = avg_flux * flux_alpha + spectral_flux * (1.0f - flux_alpha);
+    milky_energyAvgFlux = milky_energyAvgFlux * flux_alpha + spectral_flux * (1.0f - flux_alpha);
     // calculate flux ratio for detection
-    float flux_ratio = spectral_flux / (avg_flux + 1e-6f);
+    float flux_ratio = spectral_flux / (milky_energyAvgFlux + 1e-6f);
 
     // check cooldown counter before allowing a beat detection
-    if (detectionCooldownCounter >= COOLDOWN_PERIOD &&
+    if (milky_energyDetectionCooldownCounter >= MILKY_COOLDOWN_PERIOD &&
         energy_ratio > energy_threshold && 
         flux_ratio > flux_threshold && 
         current_energy > min_volume_threshold) 
     {
         // signal energy spike detection
         printf("native:SIGNAL:SIG_ENERGY\n");
-        energySpikeDetected = 1;
+        milky_energyEnergySpikeDetected = 1;
         // reset cooldown counter after detection
-        detectionCooldownCounter = 0;
+        milky_energyDetectionCooldownCounter = 0;
     } else {
-        energySpikeDetected = 0;
+        milky_energyEnergySpikeDetected = 0;
         // increment counter when no detection occurs
-        detectionCooldownCounter++;
+        milky_energyDetectionCooldownCounter++;
     }
 }

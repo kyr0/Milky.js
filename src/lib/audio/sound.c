@@ -1,13 +1,13 @@
 #include "sound.h"
 
 // Global variable to store the average offset introduced by smoothing
-float averageOffset = 0.0f;
+float milky_soundAverageOffset = 0.0f;
 
 // Cache for the last rendered waveform
-float cachedWaveform[2048]; // Assuming a fixed size for simplicity
+float milky_soundCachedWaveform[2048]; // Assuming a fixed size for simplicity
 
 // static variable to keep track of frame count
-int frameCounter = 0;
+int milky_soundFrameCounter = 0;
 
 void smoothBassEmphasizedWaveform(
     const uint8_t *waveform, 
@@ -24,7 +24,7 @@ void smoothBassEmphasizedWaveform(
         totalOffset += smoothedValue - waveform[i];
     }
     // Calculate the average offset
-    averageOffset = totalOffset / (waveformLength - 2);
+    milky_soundAverageOffset = totalOffset / (waveformLength - 2);
 }
 
 void setPixel(uint8_t *frame, size_t width, size_t x, size_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
@@ -46,10 +46,10 @@ void renderWaveformSimple(
     float inverse255 = 1.0f / 255.0f;
 
     // update the cached waveform every 4 frames
-    if (frameCounter % 2 == 0) {
-        memcpy(cachedWaveform, emphasizedWaveform, waveformLength * sizeof(float));
+    if (milky_soundFrameCounter % 2 == 0) {
+        memcpy(milky_soundCachedWaveform, emphasizedWaveform, waveformLength * sizeof(float));
     }
-    frameCounter++;
+    milky_soundFrameCounter++;
 
     // render only the waveform pixels
     for (size_t i = 0; i < waveformLength - 1; i++) {
@@ -61,12 +61,12 @@ void renderWaveformSimple(
         x2 = (x2 >= canvasWidthPx) ? canvasWidthPx - 1 : x2;
 
         // get the formatted waveform sample values
-        float sampleValue1 = cachedWaveform[i];
-        float sampleValue2 = cachedWaveform[i + 1];
+        float sampleValue1 = milky_soundCachedWaveform[i];
+        float sampleValue2 = milky_soundCachedWaveform[i + 1];
 
         // adjust the y-coordinate calculation to account for the smoothing offset and yOffset
-        int32_t y1 = halfCanvasHeight - ((int32_t)((sampleValue1 - 128 - averageOffset) * canvasHeightPx) / 512) + yOffset;
-        int32_t y2 = halfCanvasHeight - ((int32_t)((sampleValue2 - 128 - averageOffset) * canvasHeightPx) / 512) + yOffset;
+        int32_t y1 = halfCanvasHeight - ((int32_t)((sampleValue1 - 128 - milky_soundAverageOffset) * canvasHeightPx) / 512) + yOffset;
+        int32_t y2 = halfCanvasHeight - ((int32_t)((sampleValue2 - 128 - milky_soundAverageOffset) * canvasHeightPx) / 512) + yOffset;
 
         // calculate alpha intensity with reduced impact for lower sample values
         uint8_t alpha1 = (uint8_t)(255 * (1.0f - (sampleValue1 * inverse255)) * globalAlphaFactor);

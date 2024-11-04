@@ -1,37 +1,10 @@
+#ifndef VIDEO_H
+#define VIDEO_H
+
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
-
-// config/state
-// #include "./preset.c"
-
-// audio
-#include "./audio/sound.c"
-#include "./audio/energy.c"
-
-// video
-#include "./video/bitdepth.c"
-#include "./video/transform.c"
-#include "./video/draw.c"
-#include "./video/palette.c"
-#include "./video/effects/chaser.c"
-#include "./video/blur.c"
-
-// flag to check if lastFrame is initialized
-static int isLastFrameInitialized = 0;
-
-// global variable to store the previous time
-size_t prevTime = 0;
-size_t prevFrameSize = 0;
-static float speedScalar = 0.01f;
-
-// static buffer to be reused across render calls
-static uint8_t *tempBuffer = NULL;
-static uint8_t *prevFrame = NULL;
-static size_t tempBufferSize = 0;
-static size_t lastCanvasWidthPx = 0;
-static size_t lastCanvasHeightPx = 0;
 
 void render(
     uint8_t *frame,                 // Canvas frame buffer (RGBA format)
@@ -49,3 +22,5 @@ void render(
 );
 
 void reserveAndUpdateMemory(size_t canvasWidthPx, size_t canvasHeightPx,  uint8_t *frame, size_t frameSize);
+
+#endif // VIDEO_H

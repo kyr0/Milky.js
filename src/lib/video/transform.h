@@ -1,12 +1,12 @@
+#ifndef TRANSFORM_H
+#define TRANSFORM_H
+
 #include <math.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-// global variable to store the last theta value
-static float lastTheta = 0.0f;
-static float targetTheta = 0.0f;
+#include <string.h>
 
 void rotate(float timeFrame, uint8_t *tempBuffer, uint8_t *screen, float speed, float angle, size_t width, size_t height);
 
@@ -17,3 +17,5 @@ void scale(
     size_t width,              // Frame width
     size_t height              // Frame height
 );
+
+#endif // TRANSFORM_H

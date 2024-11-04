@@ -8,13 +8,13 @@
 #include <stdlib.h>
 
 // Global variable to store the average offset introduced by smoothing
-extern float averageOffset;
+extern float milky_soundAverageOffset;
 
 // Cache for the last rendered waveform
-extern float cachedWaveform[2048];
+extern float milky_soundCachedWaveform[2048];
 
 // Static variable to keep track of frame count
-extern int frameCounter;
+extern int milky_soundFrameCounter;
 
 // Function to smooth the bass-emphasized waveform
 void smoothBassEmphasizedWaveform(
