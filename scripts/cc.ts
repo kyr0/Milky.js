@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawn, ChildProcess } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { watch } from 'node:fs';
+import * as glob from 'glob';
 
 let currentCompileProcess: ChildProcess | null = null;
 
@@ -30,9 +31,11 @@ const compileCCode = () => {
     currentCompileProcess.kill('SIGTERM');
   }
 
+  const allCFiles = glob.sync('src/lib/**/*.c');
+
   // Command to compile the C code with emscripten
   currentCompileProcess = spawn('emcc', [
-    'src/lib/video.c',
+    ...allCFiles,
     '-s',
     `EXPORTED_FUNCTIONS=["_render", "_malloc", "_free"]`,
     '-msimd128',

@@ -1,19 +1,13 @@
 #include "video.h"
 
-// config/state
-// #include "./preset.c"
-
-// audio
-#include "./audio/sound.c"
-#include "./audio/energy.c"
-
-// video
-#include "./video/bitdepth.c"
-#include "./video/transform.c"
-#include "./video/draw.c"
-#include "./video/palette.c"
-#include "./video/effects/chaser.c"
-#include "./video/blur.c"
+#include "./audio/sound.h"
+#include "./audio/energy.h"
+#include "./video/bitdepth.h"
+#include "./video/transform.h"
+#include "./video/draw.h"
+#include "./video/palette.h"
+#include "./video/effects/chaser.h"
+#include "./video/blur.h"
 
 // flag to check if lastFrame is initialized
 static int milky_videoIsLastFrameInitialized = 0;
