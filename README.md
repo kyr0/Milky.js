@@ -1,6 +1,6 @@
 <span align="center">
     <p align="center">
-      <img src=".//Milky/Assets.xcassets/AppIcon.appiconset/128.png" width="128" title="Milky Logo">
+      <img src="./public/icon.png" width="128" title="Milky Logo">
     </p>
 
   # Milky.js
