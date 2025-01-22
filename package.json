@@ -40,7 +40,7 @@
     "pkgroll": "^2.5.1",
     "tsx": "^4.19.2",
     "typescript": "~5.6.2",
-    "vite": "^5.4.9"
+    "vite": "^5.4.12"
   },
   "dependencies": {
     "@nanostores/persistent": "^0.10.2",
